@@ -1,0 +1,4 @@
+*.exe
+/counter
+*.log
+__pycache__/

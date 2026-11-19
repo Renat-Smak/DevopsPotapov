@@ -1,0 +1,22 @@
+name: Docker Lab 09
+on:
+  push:
+    branches: [lab09-images]
+    paths: ['lab09/**', '.github/workflows/lab09-images.yml']
+permissions:
+  contents: read
+jobs:
+  images:
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.x'
+          cache: false
+      - name: Go unit tests
+        working-directory: lab09
+        run: go test -race -v ./...
+      - name: Docker images and health checks
+        run: python3 -u lab09/verify.py

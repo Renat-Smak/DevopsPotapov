@@ -1,0 +1,6 @@
+FROM golang:1.26-bookworm
+WORKDIR /src
+COPY . .
+RUN go build -o /usr/local/bin/counter .
+EXPOSE 8080
+ENTRYPOINT ["/usr/local/bin/counter"]
