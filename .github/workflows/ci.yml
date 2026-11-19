@@ -1,0 +1,64 @@
+name: CI
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build and Test (Go ${{ matrix.go }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        go: ['1.25.x', '1.26.x']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go }}
+          cache-dependency-path: go.sum
+      - name: Lint
+        uses: golangci/golangci-lint-action@v8
+        with:
+          version: v2.11.3
+      - name: Build
+        run: go build ./...
+      - name: Test
+        run: go test -race -coverprofile=coverage.out ./...
+      - uses: actions/upload-artifact@v4
+        with:
+          name: coverage-go-${{ matrix.go }}
+          path: coverage.out
+          if-no-files-found: error
+
+  docker:
+    needs: build
+    uses: ./.github/workflows/docker.yml
+    secrets:
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+
+  notify:
+    name: Telegram
+    needs: build
+    if: ${{ always() && github.event_name == 'push' }}
+    runs-on: ubuntu-latest
+    env:
+      TELEGRAM_CONFIGURED: ${{ secrets.TELEGRAM_TO != '' && secrets.TELEGRAM_TOKEN != '' }}
+    steps:
+      - name: Send CI status
+        if: env.TELEGRAM_CONFIGURED == 'true'
+        uses: appleboy/telegram-action@v1
+        with:
+          to: ${{ secrets.TELEGRAM_TO }}
+          token: ${{ secrets.TELEGRAM_TOKEN }}
+          message: |
+            Аптека — CI: ${{ needs.build.result }}
+            Репозиторий: ${{ github.repository }}
+            Ссылка: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
