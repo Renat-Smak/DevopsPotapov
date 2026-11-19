@@ -111,7 +111,8 @@ cp "$root/.dockerignore" "$scratch/context/.dockerignore"
 printf 'With .dockerignore: '; build "$after" "$scratch/after.log"
 
 section PHARMACY_HTTP_DNS
-docker run -d --name "$api" --network "$network" --network-alias api --label "$label" -p 127.0.0.1::8080 "$after" >/dev/null
+docker run -d --name "$api" --network "$network" --network-alias api --label "$label" \
+  --dns-search . -p 127.0.0.1::8080 "$after" >/dev/null
 apiurl="http://127.0.0.1:$(port "$api" 8080/tcp)"
 get -H 'Content-Type: application/json' \
   -d '{"name":"Paracetamol","manufacturer":"Lab","price":12.5,"prescription":false,"quantity":3}' \
@@ -121,7 +122,11 @@ medicine="$(jq -er '.id' "$scratch/create.json")"
 printf 'GET /medicines/{id}: '; get "$apiurl/medicines/$medicine" | jq -c '.medicine'
 get -H 'Content-Type: application/json' -d '{"count":1}' "$apiurl/medicines/$medicine/sell" >/dev/null
 printf 'GET after Sell: '; get "$apiurl/medicines/$medicine" | jq -ce '.medicine | select(.quantity == 2)'
-docker exec "$api" nslookup db
+db_ip="$(docker inspect "$db" --format '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}')"
+test -n "$db_ip"
+dns="$(docker exec "$api" nslookup -type=A db 127.0.0.11)"
+printf '%s\n' "$dns"
+printf '%s\n' "$dns" | grep -F "$db_ip" >/dev/null
 docker network inspect "$network" --format '{{.Name}} | {{range .Containers}}{{.Name}}; {{end}}'
 
 section DISK_BEFORE
