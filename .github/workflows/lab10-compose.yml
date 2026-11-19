@@ -1,0 +1,22 @@
+name: Compose Lab 10
+on:
+  push:
+    branches: [lab10-compose]
+    paths: ['lab10/**', '.github/workflows/lab10-compose.yml']
+permissions:
+  contents: read
+jobs:
+  compose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.x'
+          cache-dependency-path: lab10/go.sum
+      - name: Go tests and vet
+        working-directory: lab10
+        run: go test -race -v ./... && go vet ./...
+      - name: Compose stack verification
+        run: bash lab10/verify.sh

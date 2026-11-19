@@ -1,0 +1,56 @@
+x-database-env: &database-env
+  DB_HOST: db
+  DB_PORT: "5432"
+  DB_USER: ${POSTGRES_USER:?set POSTGRES_USER}
+  DB_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+  DB_NAME: ${POSTGRES_DB:?set POSTGRES_DB}
+
+services:
+  app:
+    build: .
+    image: ${APP_IMAGE:-pharmacy-lab10:local}
+    ports:
+      - "127.0.0.1:${APP_PORT:-8080}:8080"
+      - "127.0.0.1:${GRPC_PORT:-9090}:9090"
+    environment: *database-env
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    networks: [backend]
+    restart: unless-stopped
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?set POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:?set POSTGRES_DB}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+      interval: 2s
+      timeout: 2s
+      retries: 15
+    networks: [backend]
+
+  migrate:
+    image: migrate/migrate:v4.19.0
+    entrypoint: ["/bin/sh", "/migrate.sh"]
+    environment: *database-env
+    volumes:
+      - ./migrations:/migrations:ro
+      - ./migrate.sh:/migrate.sh:ro
+    depends_on:
+      db:
+        condition: service_healthy
+    networks: [backend]
+
+networks:
+  backend:
+    driver: bridge
+
+volumes:
+  pgdata:

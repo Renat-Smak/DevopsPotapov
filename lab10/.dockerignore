@@ -1,0 +1,9 @@
+.git
+.env
+.env.*
+*.md
+*.exe
+compose*.yaml
+verify*
+migrations
+migrate.sh

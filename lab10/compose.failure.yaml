@@ -1,0 +1,8 @@
+services:
+  app:
+    depends_on: !override
+      db:
+        condition: service_started
+    restart: "no"
+  db:
+    entrypoint: ["/bin/sh", "-c", "sleep 12; exec docker-entrypoint.sh postgres"]
