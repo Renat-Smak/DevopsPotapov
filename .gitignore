@@ -1,0 +1,6 @@
+*.docx
+*.zip
+*.exe
+/coverage.out
+.env
+.env.*
