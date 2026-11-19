@@ -39,12 +39,12 @@ func serve(httpAddr, grpcAddr string, logger log.Logger) error {
 	if err != nil {
 		return err
 	}
-	defer httpListener.Close()
+	defer func() { _ = httpListener.Close() }()
 	grpcListener, err := net.Listen("tcp", grpcAddr)
 	if err != nil {
 		return err
 	}
-	defer grpcListener.Close()
+	defer func() { _ = grpcListener.Close() }()
 
 	repo := repository.NewMemoryRepository()
 	svc := implementation.NewService(repo)
