@@ -1,0 +1,22 @@
+name: Docker Lab 08
+on:
+  push:
+    branches: [lab08-docker]
+    paths: ['lab08/**', '.github/workflows/lab08-docker.yml']
+permissions:
+  contents: read
+jobs:
+  cron:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Cron schedule and volume
+        run: bash lab08/check-cron.sh
+  practical:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Docker practical checks
+        run: bash lab08/check-docker.sh
